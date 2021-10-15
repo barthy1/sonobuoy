@@ -9,7 +9,7 @@ TARGET=sonobuoy
 GOTARGET=github.com/vmware-tanzu/"$TARGET"
 GOPATH=$(go env GOPATH)
 REGISTRY=sonobuoy
-LINUX_ARCH=(amd64 arm64)
+LINUX_ARCH=(amd64 arm64 s390x)
 
 # Currently only under a single arch, can iterate over these and still assume arch value.
 WIN_ARCH=amd64
@@ -31,6 +31,7 @@ BUILDMNT=/go/src/$GOTARGET
 BUILD_IMAGE=golang:1.16
 AMD_IMAGE=gcr.io/distroless/static:nonroot
 ARM_IMAGE=gcr.io/distroless/static:nonroot-arm64
+S390X_IMAGE=gcr.io/distroless/static:nonroot-s390x
 WIN_AMD64_BASEIMAGE=mcr.microsoft.com/windows/nanoserver
 TEST_IMAGE=testimage:v0.1
 KIND_CLUSTER=kind
@@ -107,6 +108,10 @@ gen_dockerfile_for_os_arch(){
             sed -e "s|BASEIMAGE|$ARM_IMAGE|g" \
                 -e 's|CMD1||g' \
                 -e 's|BINARY|build/linux/arm64/sonobuoy|g' Dockerfile > "$dockerfile"
+	elif [ "$2" = "s390x" ]; then
+            sed -e "s|BASEIMAGE|$S390X_IMAGE|g" \
+                -e 's|CMD1||g' \
+                -e 's|BINARY|build/linux/s390x/sonobuoy|g' Dockerfile > "$dockerfile"
         else
             echo "Linux ARCH unknown"
         fi
@@ -324,7 +329,7 @@ save_images_to_tar(){
 # Loads sonobuoy image and the testing image into the kind cluster.
 load_test_images_into_cluster(){
     # Retag in case we are in a fork; ignore error on our own registry though.
-    docker tag $REGISTRY/$TARGET:amd64-$IMAGE_VERSION sonobuoy/$TARGET:$IMAGE_VERSION || true
+    docker tag $REGISTRY/$TARGET:s390x-$IMAGE_VERSION sonobuoy/$TARGET:$IMAGE_VERSION || true
 
     # Tests will look for the sonobuoy images by default, so hard-code those.
     kind load docker-image --name $KIND_CLUSTER sonobuoy/$TARGET:$IMAGE_VERSION
